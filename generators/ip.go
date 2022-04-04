@@ -11,7 +11,6 @@ type IPGenerator struct {
 	ch  chan net.IP
 	r   *rand.Rand
 	max int64
-	i   int64
 }
 
 // Generates single WAN IP
@@ -43,15 +42,17 @@ func (g *IPGenerator) GenerateIP() net.IP {
 func (g *IPGenerator) Generate() <-chan net.IP {
 	go func() {
 		defer close(g.ch)
+
+		if g.max >= 0 {
+			var i int64
+			for i = 0; g.max < 0 || i < g.max; i++ {
+				g.ch <- g.GenerateIP()
+			}
+			return
+		}
+
 		for {
 			g.ch <- g.GenerateIP()
-			if g.max < 0 {
-				continue
-			}
-			g.i++
-			if g.i >= g.max {
-				return
-			}
 		}
 	}()
 

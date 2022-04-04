@@ -8,7 +8,16 @@ import (
 func TestIPGen(t *testing.T) {
 	const N = 5
 	var i int
-	ipGen := NewIPGenerator(1, 5)
+
+	ipGen := NewIPGenerator(1, 0)
+	for range ipGen.Generate() {
+		i++
+	}
+	if i != 0 {
+		t.Error("IP count is not zero")
+	}
+
+	ipGen = NewIPGenerator(1, N)
 	for ip := range ipGen.Generate() {
 		fmt.Println(ip.String())
 		i++
