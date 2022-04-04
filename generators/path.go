@@ -9,6 +9,7 @@ var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 var lettersLength = len(letters)
 var random = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+// Generates random first-level path with given length constraints
 func RandomPath(minLen int32, maxLen int32) string {
 	r := make([]rune, minLen+random.Int31n(maxLen-minLen))
 	for i := range r {
