@@ -77,6 +77,21 @@ func NewCryptoRandom() *rand.Rand {
 	return rand.New(rand.NewSource(int64(binary.LittleEndian.Uint64(b))))
 }
 
+func RandomHostsFromCIDRGen(network string) <-chan net.IP {
+	ch := make(chan net.IP)
+	hosts, err := RandomHostsFromCIDR(network)
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		defer close(ch)
+		for _, host := range hosts {
+			ch <- host
+		}
+	}()
+	return ch
+}
+
 func RandomHostsFromCIDR(network string) ([]net.IP, error) {
 	var hosts []net.IP
 	intHosts, err := CIDRToUint32Hosts(network)
