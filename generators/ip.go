@@ -34,7 +34,7 @@ func (g *IPGenerator) GenerateIP() net.IP {
 		}
 		break
 	}
-	return net.IPv4(byte(intip>>24), byte(intip>>16), byte(intip>>8), byte(intip))
+	return Uint32ToIP(intip)
 }
 
 // Generates WAN IPs to g.max count,
@@ -61,14 +61,54 @@ func (g *IPGenerator) Generate() <-chan net.IP {
 
 // Creates new WAN IP generator with capacity of channel and max count of IPs to generate via  Generate()
 func NewIPGenerator(capacity int, max int64) *IPGenerator {
+	return &IPGenerator{
+		ch:  make(chan net.IP, capacity),
+		r:   NewCryptoRandom(),
+		max: max,
+	}
+}
+
+func NewCryptoRandom() *rand.Rand {
 	b := make([]byte, 8)
 	_, err := crypto_rand.Read(b)
 	if err != nil {
 		panic("Cryptorandom seed failed: " + err.Error())
 	}
-	return &IPGenerator{
-		ch:  make(chan net.IP, capacity),
-		r:   rand.New(rand.NewSource(int64(binary.LittleEndian.Uint64(b)))),
-		max: max,
+	return rand.New(rand.NewSource(int64(binary.LittleEndian.Uint64(b))))
+}
+
+func RandomHostsFromCIDR(network string) ([]net.IP, error) {
+	var hosts []net.IP
+	intHosts, err := CIDRToUint32Hosts(network)
+	if err != nil {
+		return hosts, err
 	}
+	r := NewCryptoRandom()
+	r.Shuffle(len(intHosts), func(i, j int) {
+		intHosts[i], intHosts[j] = intHosts[j], intHosts[i]
+	})
+	for _, intHost := range intHosts {
+		hosts = append(hosts, Uint32ToIP(intHost))
+	}
+	return hosts, nil
+}
+
+func Uint32ToIP(intip uint32) net.IP {
+	return net.IPv4(byte(intip>>24), byte(intip>>16), byte(intip>>8), byte(intip))
+}
+
+// Creates uint32 host IPs from cidr network
+func CIDRToUint32Hosts(network string) ([]uint32, error) {
+	var arr []uint32
+	_, ipv4Net, err := net.ParseCIDR(network)
+	if err != nil {
+		return arr, err
+	}
+	mask := binary.BigEndian.Uint32(ipv4Net.Mask)
+	start := binary.BigEndian.Uint32(ipv4Net.IP)
+	finish := (start & mask) | (mask ^ 0xffffffff)
+	for i := start + 1; i < finish; i++ {
+		arr = append(arr, i)
+	}
+	return arr, nil
 }
