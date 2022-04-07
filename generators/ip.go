@@ -3,8 +3,10 @@ package generators
 import (
 	crypto_rand "crypto/rand"
 	"encoding/binary"
+	"errors"
 	"math/rand"
 	"net"
+	"strings"
 )
 
 type IPGenerator struct {
@@ -92,6 +94,21 @@ func RandomHostsFromCIDRGen(network string) <-chan net.IP {
 	return ch
 }
 
+func RandomHostsFromListGen(list []string) <-chan net.IP {
+	ch := make(chan net.IP)
+	hosts, err := RandomHostsFromList(list)
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		defer close(ch)
+		for _, host := range hosts {
+			ch <- host
+		}
+	}()
+	return ch
+}
+
 func RandomHostsFromCIDR(network string) ([]net.IP, error) {
 	var hosts []net.IP
 	intHosts, err := CIDRToUint32Hosts(network)
@@ -104,6 +121,30 @@ func RandomHostsFromCIDR(network string) ([]net.IP, error) {
 	})
 	for _, intHost := range intHosts {
 		hosts = append(hosts, Uint32ToIP(intHost))
+	}
+	return hosts, nil
+}
+
+func RandomHostsFromList(list []string) ([]net.IP, error) {
+	var hosts []net.IP
+	r := NewCryptoRandom()
+	r.Shuffle(len(list), func(i, j int) {
+		list[i], list[j] = list[j], list[i]
+	})
+	for _, line := range list {
+		if strings.IndexRune(line, '/') > 0 {
+			_hosts, err := RandomHostsFromCIDR(line)
+			if err != nil {
+				return hosts, err
+			}
+			hosts = append(hosts, _hosts...)
+		} else {
+			ip := net.ParseIP(line)
+			if ip == nil {
+				return hosts, errors.New("wrong IP: " + line)
+			}
+			hosts = append(hosts, ip)
+		}
 	}
 	return hosts, nil
 }

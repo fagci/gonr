@@ -47,3 +47,23 @@ func TestRandomHostsFromCIDR(t *testing.T) {
 		t.Error("Last addr not in range")
 	}
 }
+
+func TestRandomHostsFromList(t *testing.T) {
+	list := []string{"127.0.0.1", "192.168.0.1/24"}
+	randomHosts, err := RandomHostsFromList(list)
+	if err != nil {
+		t.Error(err)
+	}
+	sort.Slice(randomHosts, func(i, j int) bool {
+		return bytes.Compare(randomHosts[i], randomHosts[j]) < 0
+	})
+	if len(randomHosts) != 255 {
+		t.Error("Wrong IPs count")
+	}
+	if randomHosts[0].String() != "127.0.0.1" {
+		t.Error("First addr not in range")
+	}
+	if randomHosts[len(randomHosts)-1].String() != "192.168.0.254" {
+		t.Error("Last addr not in range")
+	}
+}
