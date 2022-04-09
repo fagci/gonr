@@ -20,18 +20,18 @@ func (g *IPGenerator) GenerateIP() net.IP {
 	var intip uint32
 	for {
 		intip = g.r.Uint32()%0xD0000000 + 0xFFFFFF
-		if (intip >= 0x0A000000 && intip <= 0x0AFFFFFF) ||
-			(intip >= 0x64400000 && intip <= 0x647FFFFF) ||
-			(intip >= 0x7F000000 && intip <= 0x7FFFFFFF) ||
-			(intip >= 0xA9FE0000 && intip <= 0xA9FEFFFF) ||
-			(intip >= 0xAC100000 && intip <= 0xAC1FFFFF) ||
-			(intip >= 0xC0000000 && intip <= 0xC0000007) ||
-			(intip >= 0xC00000AA && intip <= 0xC00000AB) ||
-			(intip >= 0xC0000200 && intip <= 0xC00002FF) ||
-			(intip >= 0xC0A80000 && intip <= 0xC0A8FFFF) ||
-			(intip >= 0xC6120000 && intip <= 0xC613FFFF) ||
-			(intip >= 0xC6336400 && intip <= 0xC63364FF) ||
-			(intip >= 0xCB007100 && intip <= 0xCB0071FF) {
+		if  (intip > 0x09FFFFFF && intip < 0x0B000000) ||
+			(intip > 0x643fffff && intip < 0x64800000) ||
+			(intip > 0x7EFFFFFF && intip < 0x80000000) ||
+			(intip > 0xA9FDFFFF && intip < 0xA9FF0000) ||
+			(intip > 0xAC0FFFFF && intip < 0xAC200000) ||
+			(intip > 0xBFFFFFFF && intip < 0xC0000008) ||
+			(intip > 0xC00000A9 && intip < 0xC00000AC) ||
+			(intip > 0xC00001FF && intip < 0xC0000300) ||
+			(intip > 0xC0A7FFFF && intip < 0xC0A90000) ||
+			(intip > 0xC611FFFF && intip < 0xC6140000) ||
+			(intip > 0xC63363FF && intip < 0xC6336500) ||
+			(intip > 0xCB0070FF && intip < 0xCB007200) {
 			continue
 		}
 		break
