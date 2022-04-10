@@ -167,7 +167,6 @@ func Uint32ToIP(intip uint32) net.IP {
 
 // Creates uint32 host IPs from cidr network
 func CIDRToUint32Hosts(network string) ([]uint32, error) {
-	var arr []uint32
 	addresses, err := CIDRToUint32Addresses(network)
 	if err != nil {
 		return addresses, err
@@ -175,6 +174,7 @@ func CIDRToUint32Hosts(network string) ([]uint32, error) {
 	if len(addresses) == 1 && addresses[0]&0xff == 0 {
 		return []uint32{addresses[0] + 1}, nil
 	}
+    arr := addresses[:0]
 	for _, addr := range addresses {
 		lastByte := addr & 0xff
 		if lastByte != 0 && lastByte != 0xff {
