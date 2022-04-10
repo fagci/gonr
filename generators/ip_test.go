@@ -25,7 +25,15 @@ func TestIPGen(t *testing.T) {
 		i++
 	}
 	if i != N {
-		t.Error("Wrong IP count")
+		t.Errorf("Wrong IP count %d != %d", i, N)
+	}
+}
+
+func BenchmarkIPGen(b *testing.B) {
+	ipGen := NewIPGenerator(512, int64(b.N))
+	b.SetBytes(1)
+	b.ResetTimer()
+	for range ipGen.Generate() {
 	}
 }
 
@@ -41,13 +49,13 @@ func TestRandomHostsFromCIDR(t *testing.T) {
 	if len(randomHosts) != 254 {
 		t.Errorf("Wrong IPs count (%d)", len(randomHosts))
 	}
-    first := randomHosts[0].String()
+	first := randomHosts[0].String()
 	if first != "192.168.0.1" {
-        t.Errorf("First addr not in range: %s", first)
+		t.Errorf("First addr not in range: %s", first)
 	}
-    last := randomHosts[len(randomHosts)-1].String()
+	last := randomHosts[len(randomHosts)-1].String()
 	if last != "192.168.0.254" {
-        t.Errorf("Last addr not in range: %s", last)
+		t.Errorf("Last addr not in range: %s", last)
 	}
 }
 
@@ -64,13 +72,13 @@ func TestRandomHostsFromCIDRComplicated(t *testing.T) {
 	if len(randomHosts) != needCount {
 		t.Errorf("Wrong IPs count (%d, need %d)", len(randomHosts), needCount)
 	}
-    first := randomHosts[0].String()
+	first := randomHosts[0].String()
 	if first != "192.168.0.1" {
-        t.Errorf("First addr not in range: %s", first)
+		t.Errorf("First addr not in range: %s", first)
 	}
-    last := randomHosts[len(randomHosts)-1].String()
+	last := randomHosts[len(randomHosts)-1].String()
 	if last != "192.168.3.254" {
-        t.Errorf("Last addr not in range: %s", last)
+		t.Errorf("Last addr not in range: %s", last)
 	}
 }
 

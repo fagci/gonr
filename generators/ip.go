@@ -10,9 +10,25 @@ import (
 )
 
 type IPGenerator struct {
-	ch  chan net.IP
-	r   *rand.Rand
-	max int64
+	ch      chan net.IP
+	r       *rand.Rand
+	max     int64
+	running bool
+}
+
+func notGlobal(intip uint32) bool {
+	return (intip > 0x09FFFFFF && intip < 0x0B000000) ||
+		(intip > 0x643fffff && intip < 0x64800000) ||
+		(intip > 0x7EFFFFFF && intip < 0x80000000) ||
+		(intip > 0xA9FDFFFF && intip < 0xA9FF0000) ||
+		(intip > 0xAC0FFFFF && intip < 0xAC200000) ||
+		(intip > 0xBFFFFFFF && intip < 0xC0000008) ||
+		(intip > 0xC00000A9 && intip < 0xC00000AC) ||
+		(intip > 0xC00001FF && intip < 0xC0000300) ||
+		(intip > 0xC0A7FFFF && intip < 0xC0A90000) ||
+		(intip > 0xC611FFFF && intip < 0xC6140000) ||
+		(intip > 0xC63363FF && intip < 0xC6336500) ||
+		(intip > 0xCB0070FF && intip < 0xCB007200)
 }
 
 // Generates single WAN IP
@@ -20,45 +36,41 @@ func (g *IPGenerator) GenerateIP() net.IP {
 	var intip uint32
 	for {
 		intip = g.r.Uint32()%0xD0000000 + 0xFFFFFF
-		if  (intip > 0x09FFFFFF && intip < 0x0B000000) ||
-			(intip > 0x643fffff && intip < 0x64800000) ||
-			(intip > 0x7EFFFFFF && intip < 0x80000000) ||
-			(intip > 0xA9FDFFFF && intip < 0xA9FF0000) ||
-			(intip > 0xAC0FFFFF && intip < 0xAC200000) ||
-			(intip > 0xBFFFFFFF && intip < 0xC0000008) ||
-			(intip > 0xC00000A9 && intip < 0xC00000AC) ||
-			(intip > 0xC00001FF && intip < 0xC0000300) ||
-			(intip > 0xC0A7FFFF && intip < 0xC0A90000) ||
-			(intip > 0xC611FFFF && intip < 0xC6140000) ||
-			(intip > 0xC63363FF && intip < 0xC6336500) ||
-			(intip > 0xCB0070FF && intip < 0xCB007200) {
+		if notGlobal(intip) {
 			continue
 		}
-		break
+		return Uint32ToIP(intip)
 	}
-	return Uint32ToIP(intip)
 }
 
 // Generates WAN IPs to g.max count,
 // passed when generator created via NewIPGenerator
 func (g *IPGenerator) Generate() <-chan net.IP {
+	g.running = true
+
 	go func() {
 		defer close(g.ch)
+		ch := g.ch
+		max := g.max
 
-		if g.max >= 0 {
+		if max >= 0 {
 			var i int64
-			for i = 0; g.max < 0 || i < g.max; i++ {
-				g.ch <- g.GenerateIP()
+			for i = 0; i < max; i++ {
+				ch <- g.GenerateIP()
 			}
 			return
 		}
 
-		for {
-			g.ch <- g.GenerateIP()
+		for g.running {
+			ch <- g.GenerateIP()
 		}
 	}()
 
 	return g.ch
+}
+
+func (g *IPGenerator) Stop() {
+	g.running = false
 }
 
 // Creates new WAN IP generator with capacity of channel and max count of IPs to generate via  Generate()
@@ -150,7 +162,7 @@ func RandomHostsFromList(list []string) ([]net.IP, error) {
 }
 
 func Uint32ToIP(intip uint32) net.IP {
-	return net.IPv4(byte(intip>>24), byte(intip>>16), byte(intip>>8), byte(intip))
+	return net.IPv4(byte(intip>>24), byte(intip>>16&0xff), byte(intip>>8&0xff), byte(intip&0xff))
 }
 
 // Creates uint32 host IPs from cidr network
