@@ -126,10 +126,10 @@ func RandomHostsFromCIDR(network string) (hosts []net.IP, err error) {
 	if err != nil {
 		return hosts, err
 	}
-	return RandomHostsFromNet(*ipv4Net)
+	return RandomHostsFromNet(ipv4Net)
 }
 
-func RandomHostsFromNet(ipv4Net net.IPNet) (hosts []net.IP, err error) {
+func RandomHostsFromNet(ipv4Net *net.IPNet) (hosts []net.IP, err error) {
 	intHosts, err := NetToUint32Hosts(ipv4Net)
 	if err != nil {
 		return hosts, err
@@ -172,7 +172,7 @@ func Uint32ToIP(intip uint32) net.IP {
 	return net.IPv4(byte(intip>>24), byte(intip>>16&0xff), byte(intip>>8&0xff), byte(intip&0xff))
 }
 
-func NetToUint32Hosts(ipv4Net net.IPNet) ([]uint32, error) {
+func NetToUint32Hosts(ipv4Net *net.IPNet) ([]uint32, error) {
 	addresses, err := NetToUint32Addresses(ipv4Net)
 	if err != nil {
 		return addresses, err
@@ -196,10 +196,10 @@ func CIDRToUint32Hosts(network string) (hosts []uint32, err error) {
 	if err != nil {
 		return hosts, err
 	}
-	return NetToUint32Hosts(*ipv4Net)
+	return NetToUint32Hosts(ipv4Net)
 }
 
-func NetToUint32Addresses(ipv4Net net.IPNet) ([]uint32, error) {
+func NetToUint32Addresses(ipv4Net *net.IPNet) ([]uint32, error) {
 	var arr []uint32
 	mask := binary.BigEndian.Uint32(ipv4Net.Mask)
 	start := binary.BigEndian.Uint32(ipv4Net.IP)
@@ -219,5 +219,5 @@ func CIDRToUint32Addresses(network string) ([]uint32, error) {
 	if err != nil {
 		return arr, err
 	}
-	return NetToUint32Addresses(*ipv4Net)
+	return NetToUint32Addresses(ipv4Net)
 }
