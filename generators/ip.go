@@ -121,9 +121,16 @@ func RandomHostsFromListGen(list []string) <-chan net.IP {
 	return ch
 }
 
-func RandomHostsFromCIDR(network string) ([]net.IP, error) {
-	var hosts []net.IP
-	intHosts, err := CIDRToUint32Hosts(network)
+func RandomHostsFromCIDR(network string) (hosts []net.IP, err error) {
+	_, ipv4Net, err := net.ParseCIDR(network)
+	if err != nil {
+		return hosts, err
+	}
+	return RandomHostsFromNet(*ipv4Net)
+}
+
+func RandomHostsFromNet(ipv4Net net.IPNet) (hosts []net.IP, err error) {
+	intHosts, err := NetToUint32Hosts(ipv4Net)
 	if err != nil {
 		return hosts, err
 	}
@@ -165,16 +172,15 @@ func Uint32ToIP(intip uint32) net.IP {
 	return net.IPv4(byte(intip>>24), byte(intip>>16&0xff), byte(intip>>8&0xff), byte(intip&0xff))
 }
 
-// Creates uint32 host IPs from cidr network
-func CIDRToUint32Hosts(network string) ([]uint32, error) {
-	addresses, err := CIDRToUint32Addresses(network)
+func NetToUint32Hosts(ipv4Net net.IPNet) ([]uint32, error) {
+	addresses, err := NetToUint32Addresses(ipv4Net)
 	if err != nil {
 		return addresses, err
 	}
 	if len(addresses) == 1 && addresses[0]&0xff == 0 {
 		return []uint32{addresses[0] + 1}, nil
 	}
-    arr := addresses[:0]
+	arr := addresses[:0]
 	for _, addr := range addresses {
 		lastByte := addr & 0xff
 		if lastByte != 0 && lastByte != 0xff {
@@ -184,12 +190,17 @@ func CIDRToUint32Hosts(network string) ([]uint32, error) {
 	return arr, nil
 }
 
-func CIDRToUint32Addresses(network string) ([]uint32, error) {
-	var arr []uint32
+// Creates uint32 host IPs from cidr network
+func CIDRToUint32Hosts(network string) (hosts []uint32, err error) {
 	_, ipv4Net, err := net.ParseCIDR(network)
 	if err != nil {
-		return arr, err
+		return hosts, err
 	}
+	return NetToUint32Hosts(*ipv4Net)
+}
+
+func NetToUint32Addresses(ipv4Net net.IPNet) ([]uint32, error) {
+	var arr []uint32
 	mask := binary.BigEndian.Uint32(ipv4Net.Mask)
 	start := binary.BigEndian.Uint32(ipv4Net.IP)
 	finish := (start & mask) | (mask ^ 0xffffffff)
@@ -200,4 +211,13 @@ func CIDRToUint32Addresses(network string) ([]uint32, error) {
 		arr = append(arr, i)
 	}
 	return arr, nil
+}
+
+func CIDRToUint32Addresses(network string) ([]uint32, error) {
+	var arr []uint32
+	_, ipv4Net, err := net.ParseCIDR(network)
+	if err != nil {
+		return arr, err
+	}
+	return NetToUint32Addresses(*ipv4Net)
 }
