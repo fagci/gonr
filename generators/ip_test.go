@@ -3,6 +3,7 @@ package generators
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"sort"
 	"testing"
 )
@@ -120,6 +121,29 @@ func TestRandomHostsFromList(t *testing.T) {
 		t.Errorf("Wrong IPs count (%d)", len(randomHosts))
 	}
 	if randomHosts[0].String() != "127.0.0.1" {
+		t.Error("First addr not in range")
+	}
+	if randomHosts[len(randomHosts)-1].String() != "192.168.0.254" {
+		t.Error("Last addr not in range")
+	}
+}
+
+func TestRandomHostsFromNet(t *testing.T) {
+	network := &net.IPNet{
+		IP:   net.IPv4(192, 168, 0, 1),
+		Mask: net.IPv4Mask(255, 255, 255, 0),
+	}
+    randomHosts, err := RandomHostsFromNet(network)
+	if err != nil {
+		t.Error(err)
+	}
+	sort.Slice(randomHosts, func(i, j int) bool {
+		return bytes.Compare(randomHosts[i], randomHosts[j]) < 0
+	})
+	if len(randomHosts) != 254 {
+		t.Errorf("Wrong IPs count (%d)", len(randomHosts))
+	}
+	if randomHosts[0].String() != "192.168.0.1" {
 		t.Error("First addr not in range")
 	}
 	if randomHosts[len(randomHosts)-1].String() != "192.168.0.254" {

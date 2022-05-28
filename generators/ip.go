@@ -202,7 +202,7 @@ func CIDRToUint32Hosts(network string) (hosts []uint32, err error) {
 func NetToUint32Addresses(ipv4Net *net.IPNet) ([]uint32, error) {
 	var arr []uint32
 	mask := binary.BigEndian.Uint32(ipv4Net.Mask)
-	start := binary.BigEndian.Uint32(ipv4Net.IP)
+	start := binary.BigEndian.Uint32(ipv4Net.IP.To4())
 	finish := (start & mask) | (mask ^ 0xffffffff)
 	if finish <= start {
 		finish = start + 1
