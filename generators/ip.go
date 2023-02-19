@@ -16,31 +16,61 @@ type IPGenerator struct {
 	running bool
 }
 
-func notGlobal(intip uint32) bool {
-	return (intip > 0x09FFFFFF && intip < 0x0B000000) ||
-		(intip > 0x643fffff && intip < 0x64800000) ||
-		(intip > 0x7EFFFFFF && intip < 0x80000000) ||
-		(intip > 0xA9FDFFFF && intip < 0xA9FF0000) ||
-		(intip > 0xAC0FFFFF && intip < 0xAC200000) ||
-		(intip > 0xBFFFFFFF && intip < 0xC0000008) ||
-		(intip > 0xC00000A9 && intip < 0xC00000AC) ||
-		(intip > 0xC00001FF && intip < 0xC0000300) ||
-		(intip > 0xC0A7FFFF && intip < 0xC0A90000) ||
-		(intip > 0xC611FFFF && intip < 0xC6140000) ||
-		(intip > 0xC63363FF && intip < 0xC6336500) ||
-		(intip > 0xCB0070FF && intip < 0xCB007200)
+var ranges = [][]uint32{
+	{0xb000000, 0x643fffff},
+	{0x80000000, 0xa9fdffff},
+	{0x64800000, 0x7effffff},
+	{0xcb007200, 0xdfffffff},
+	{0xac200000, 0xbfffffff},
+	{0xc0a90000, 0xc611ffff},
+	{0xc6336500, 0xcb0070ff},
+	{0xa9ff0000, 0xac0fffff},
+	{0xc0000300, 0xc05862ff},
+	{0xc0586400, 0xc0a7ffff},
+	{0xc6140000, 0xc63363ff},
+	{0xc0000100, 0xc00001ff},
+}
+
+var (
+	sizes []uint32
+	total uint32
+	probs []float32
+)
+
+func init() {
+	for _, r := range ranges {
+		sizes = append(sizes, r[1]-r[0])
+	}
+	for _, s := range sizes {
+		total += s
+	}
+	for _, s := range sizes {
+		probs = append(probs, float32(s)/float32(total))
+	}
+}
+
+func (g *IPGenerator) RangeRandByIndex(i int) uint32 {
+	return (g.r.Uint32() % (sizes[i] + 1)) + ranges[i][0]
+}
+
+func (g *IPGenerator) GenerateIntIP() uint32 {
+	var i int
+	var rp float32
+	p := g.r.Float32()
+
+	for i, rp = range probs {
+		if p < rp {
+			break
+		}
+		p -= rp
+	}
+	return g.RangeRandByIndex(i)
 }
 
 // Generates single WAN IP
 func (g *IPGenerator) GenerateIP() net.IP {
-	var intip uint32
-	for {
-		intip = g.r.Uint32()%0xD0000000 + 0xFFFFFF
-		if notGlobal(intip) {
-			continue
-		}
-		return Uint32ToIP(intip)
-	}
+	intip := g.GenerateIntIP()
+	return Uint32ToIP(intip)
 }
 
 // Generates WAN IPs to g.max count,
